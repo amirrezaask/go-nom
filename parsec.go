@@ -6,6 +6,8 @@ import (
 	"strconv"
 )
 
+type Empty struct{}
+
 var ErrEOF = errors.New("reached eof")
 
 type Scanner interface {
@@ -61,26 +63,22 @@ func Char(c rune) Parser[rune] {
 	}
 }
 
-func Sequence[IN, OUT any](mapper func([]IN) OUT, ps ...Parser[IN]) Parser[OUT] {
-	return Parser[OUT]{
+func Sequence[T any](ps ...Parser[T]) Parser[[]T] {
+	return Parser[[]T]{
 		Name: "sequence",
-		f: func(s Scanner) (OUT, error) {
-			o := new(OUT)
-
-			var values []IN
+		f: func(s Scanner) ([]T, error) {
+			var values []T
 			for _, p := range ps {
 				value, err := p.Parse(s)
 				if err != nil {
-					return *o, err
+					return nil, err
 				}
 				values = append(values, value)
 			}
-			if mapper == nil {
-				return *o, nil
-			}
-			return mapper(values), nil
+			return values, nil
 		},
 	}
+
 }
 
 func OneOf[T any](ps ...Parser[T]) Parser[T] {
@@ -102,15 +100,15 @@ func OneOf[T any](ps ...Parser[T]) Parser[T] {
 	}
 }
 
-func OneOrMore[IN, OUT any](mapper func([]IN) (OUT, error), parser Parser[IN]) Parser[OUT] {
-	return Parser[OUT]{
+func OneOrMore[T any](parser Parser[T]) Parser[[]T] {
+	return Parser[[]T]{
 		Name: "one or more",
-		f: func(s Scanner) (OUT, error) {
-			var values []IN
+		f: func(s Scanner) ([]T, error) {
+			var values []T
 			var err error
 			value, err := parser.Parse(s)
 			if err != nil {
-				return *new(OUT), errors.New("one or more should at least matched once")
+				return nil, errors.New("one or more should at least matched once")
 			}
 			values = append(values, value)
 			for !s.EOF() {
@@ -120,19 +118,16 @@ func OneOrMore[IN, OUT any](mapper func([]IN) (OUT, error), parser Parser[IN]) P
 				}
 				values = append(values, value)
 			}
-			if mapper == nil {
-				return *new(OUT), nil
-			}
-			return mapper(values)
+			return values, nil
 		},
 	}
 }
 
-func ZeroOrMore[IN, OUT any](mapper func([]IN) OUT, parser Parser[IN]) Parser[OUT] {
-	return Parser[OUT]{
+func ZeroOrMore[T any](parser Parser[T]) Parser[[]T] {
+	return Parser[[]T]{
 		Name: "zero or more",
-		f: func(s Scanner) (OUT, error) {
-			var values []IN
+		f: func(s Scanner) ([]T, error) {
+			var values []T
 			for !s.EOF() {
 				value, err := parser.Parse(s)
 				if err != nil {
@@ -140,29 +135,20 @@ func ZeroOrMore[IN, OUT any](mapper func([]IN) OUT, parser Parser[IN]) Parser[OU
 				}
 				values = append(values, value)
 			}
-			if mapper == nil {
-				return *new(OUT), nil
-			}
-			return mapper(values), nil
+			return values, nil
 		},
 	}
 }
 
-func ZeroOrOne[IN, OUT any](mapper func(*IN) OUT, parser Parser[IN]) Parser[OUT] {
-	return Parser[OUT]{
+func ZeroOrOne[T any](parser Parser[T]) Parser[*T] {
+	return Parser[*T]{
 		Name: "zero or one",
-		f: func(s Scanner) (OUT, error) {
+		f: func(s Scanner) (*T, error) {
 			value, err := parser.Parse(s)
 			if err != nil {
-				if mapper == nil {
-					return *new(OUT), nil
-				}
-				return mapper(nil), nil
+				return nil, nil
 			}
-			if mapper == nil {
-				return *new(OUT), nil
-			}
-			return mapper(&value), nil
+			return &value, nil
 		},
 	}
 }
@@ -181,7 +167,7 @@ func Map[IN, OUT any](p Parser[IN], f func(i IN) (OUT, error)) Parser[OUT] {
 	}
 }
 
-var DigitParser = Map(OneOf(
+var DigitParser = OneOf(
 	Char('0'),
 	Char('1'),
 	Char('2'),
@@ -192,14 +178,36 @@ var DigitParser = Map(OneOf(
 	Char('7'),
 	Char('8'),
 	Char('9'),
-), func(c rune) (int, error) {
-	return strconv.Atoi(string(c))
+)
+
+var IntParser = Map(OneOrMore(DigitParser), func(cs []rune) (int, error) {
+	i, err := strconv.Atoi(string(cs))
+	if err != nil {
+		return 0, err
+	}
+	return i, nil
 })
 
-var IntParser = OneOrMore(func(cs []int) (int, error) {
-	var s string
-	for _, c := range cs {
-		s += fmt.Sprint(c)
+var FloatParser = Map(Map(Sequence(
+	OneOrMore(DigitParser),
+	Map(Sequence(Map(Char('.'), func(r rune) ([]rune, error) { return []rune{r}, nil }), OneOrMore(DigitParser)),
+		func(rss [][]rune) ([]rune, error) {
+			var out []rune
+			for _, rs := range rss {
+				out = append(out, rs...)
+			}
+			return out, nil
+		})), func(rss [][]rune) ([]rune, error) {
+	var out []rune
+	for _, rs := range rss {
+		out = append(out, rs...)
 	}
-	return strconv.Atoi(s)
-}, DigitParser)
+	return out, nil
+},
+), func(rs []rune) (float64, error) {
+	i, err := strconv.ParseFloat(string(rs), 64)
+	if err != nil {
+		return 0, err
+	}
+	return i, nil
+})

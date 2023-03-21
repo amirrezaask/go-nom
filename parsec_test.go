@@ -1,6 +1,8 @@
 package parsec
 
 import (
+	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -21,7 +23,18 @@ func TestChar(t *testing.T) {
 
 func TestSeq(t *testing.T) {
 	s := NewStringScanner("char")
-	charKeywordParser := Sequence[rune, bool](nil, Char('c'), Char('h'), Char('a'), Char('r'))
+	charKeywordParser := Map(Sequence(Char('c'), Char('h'), Char('a'), Char('r')), func(cs []rune) (struct{}, error) {
+		var s string
+		for _, c := range cs {
+			s += string(c)
+		}
+
+		if s != "char" {
+			return struct{}{}, errors.New("not matched")
+		}
+
+		return struct{}{}, nil
+	})
 
 	_, err := charKeywordParser.Parse(s)
 	assert.NoError(t, err)
@@ -29,8 +42,22 @@ func TestSeq(t *testing.T) {
 
 func TestOneOf(t *testing.T) {
 	s := NewStringScanner("true")
-	trueKeywordParser := Sequence(func(i []rune) bool { return true }, Char('t'), Char('r'), Char('u'), Char('e'))
-	falseKeywordParser := Sequence(func(i []rune) bool { return false }, Char('f'), Char('a'), Char('l'), Char('s'), Char('e'))
+	boolean := func(cs []rune) (bool, error) {
+		var s string
+		for _, c := range cs {
+			s += string(c)
+		}
+
+		if s == "true" {
+			return true, nil
+		} else if s == "false" {
+			return false, nil
+		} else {
+			return false, fmt.Errorf("expected boolean found %s", s)
+		}
+	}
+	trueKeywordParser := Map(Sequence(Char('t'), Char('r'), Char('u'), Char('e')), boolean)
+	falseKeywordParser := Map(Sequence(Char('f'), Char('a'), Char('l'), Char('s'), Char('e')), boolean)
 	booleanParser := OneOf(trueKeywordParser, falseKeywordParser)
 
 	b, err := booleanParser.Parse(s)
@@ -41,44 +68,38 @@ func TestOneOf(t *testing.T) {
 func TestOneOrMore(t *testing.T) {
 	s := NewStringScanner("bbbb")
 	bParser := Char('b')
-	bsParser := OneOrMore(func(i []rune) (int, error) {
-		return len(i), nil
-	}, bParser)
+	bsParser := OneOrMore(bParser)
 
-	b, err := bsParser.Parse(s)
+	bs, err := bsParser.Parse(s)
 	assert.NoError(t, err)
-	assert.Equal(t, 4, b)
+	assert.Equal(t, 4, len(bs))
 }
 
 func TestZeroOrMore(t *testing.T) {
 	s := NewStringScanner("bbbb")
 	bParser := Char('b')
-	bsParser := ZeroOrMore(func(i []rune) int {
-		return len(i)
-	}, bParser)
+	bsParser := ZeroOrMore(bParser)
 
-	b, err := bsParser.Parse(s)
+	bs, err := bsParser.Parse(s)
 	assert.NoError(t, err)
-	assert.Equal(t, 4, b)
+	assert.Equal(t, 4, len(bs))
 }
 
 func TestZeroOrOne(t *testing.T) {
-	s := NewStringScanner("bbbb")
+	s := NewStringScanner("s")
 	bParser := Char('b')
-	bsParser := ZeroOrOne(func(i *rune) bool {
-		return i != nil
-	}, bParser)
+	bsParser := ZeroOrOne(bParser)
 
 	b, err := bsParser.Parse(s)
 	assert.NoError(t, err)
-	assert.True(t, b)
+	assert.Nil(t, b)
 }
 
 func TestDigit(t *testing.T) {
 	s := NewStringScanner("1")
 	c, err := DigitParser.Parse(s)
 	assert.NoError(t, err)
-	assert.Equal(t, 1, c)
+	assert.Equal(t, '1', c)
 
 }
 
@@ -91,7 +112,7 @@ func TestInt(t *testing.T) {
 
 func TestFloat(t *testing.T) {
 	s := NewStringScanner("0123.21")
-	c, err := IntParser.Parse(s)
+	c, err := FloatParser.Parse(s)
 	assert.NoError(t, err)
-	assert.Equal(t, 123, c)
+	assert.Equal(t, 123.21, c)
 }
