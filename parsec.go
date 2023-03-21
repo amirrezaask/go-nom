@@ -3,6 +3,7 @@ package parsec
 import (
 	"errors"
 	"fmt"
+	"strconv"
 )
 
 var ErrEOF = errors.New("reached eof")
@@ -165,3 +166,25 @@ func ZeroOrOne[IN, OUT any](mapper func(*IN) OUT, parser Parser[IN]) Parser[OUT]
 		},
 	}
 }
+
+var DigitParser = OneOf(
+	Char('0'),
+	Char('1'),
+	Char('2'),
+	Char('3'),
+	Char('4'),
+	Char('5'),
+	Char('6'),
+	Char('7'),
+	Char('8'),
+	Char('9'),
+)
+
+var IntParser = OneOrMore(func(cs []rune) int64 {
+	var s string
+	for _, c := range cs {
+		s += string(c)
+	}
+	i, _ := strconv.Atoi(s)
+	return int64(i)
+}, DigitParser)

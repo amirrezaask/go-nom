@@ -73,3 +73,16 @@ func TestZeroOrOne(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, b)
 }
+
+func TestDigit(t *testing.T) {
+
+	s := NewStringScanner("bbbb")
+	bParser := Char('b')
+	bsParser := ZeroOrOne(func(i *rune) bool {
+		return i != nil
+	}, bParser)
+
+	b, err := bsParser.Parse(s)
+	assert.NoError(t, err)
+	assert.True(t, b)
+}
