@@ -43,11 +43,7 @@ func TestSeq(t *testing.T) {
 func TestOneOf(t *testing.T) {
 	s := NewStringScanner("true")
 	boolean := func(cs []rune) (bool, error) {
-		var s string
-		for _, c := range cs {
-			s += string(c)
-		}
-
+		s := string(cs)
 		if s == "true" {
 			return true, nil
 		} else if s == "false" {
