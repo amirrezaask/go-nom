@@ -83,7 +83,14 @@ func TestDigit(t *testing.T) {
 }
 
 func TestInt(t *testing.T) {
-	s := NewStringScanner("123")
+	s := NewStringScanner("0123")
+	c, err := IntParser.Parse(s)
+	assert.NoError(t, err)
+	assert.Equal(t, 123, c)
+}
+
+func TestFloat(t *testing.T) {
+	s := NewStringScanner("0123.21")
 	c, err := IntParser.Parse(s)
 	assert.NoError(t, err)
 	assert.Equal(t, 123, c)
