@@ -41,8 +41,8 @@ func TestOneOf(t *testing.T) {
 func TestOneOrMore(t *testing.T) {
 	s := NewStringScanner("bbbb")
 	bParser := Char('b')
-	bsParser := OneOrMore(func(i []rune) int {
-		return len(i)
+	bsParser := OneOrMore(func(i []rune) (int, error) {
+		return len(i), nil
 	}, bParser)
 
 	b, err := bsParser.Parse(s)
@@ -75,14 +75,16 @@ func TestZeroOrOne(t *testing.T) {
 }
 
 func TestDigit(t *testing.T) {
-
-	s := NewStringScanner("bbbb")
-	bParser := Char('b')
-	bsParser := ZeroOrOne(func(i *rune) bool {
-		return i != nil
-	}, bParser)
-
-	b, err := bsParser.Parse(s)
+	s := NewStringScanner("1")
+	c, err := DigitParser.Parse(s)
 	assert.NoError(t, err)
-	assert.True(t, b)
+	assert.Equal(t, 1, c)
+
+}
+
+func TestInt(t *testing.T) {
+	s := NewStringScanner("123")
+	c, err := IntParser.Parse(s)
+	assert.NoError(t, err)
+	assert.Equal(t, 123, c)
 }

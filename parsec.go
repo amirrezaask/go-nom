@@ -102,7 +102,7 @@ func OneOf[T any](ps ...Parser[T]) Parser[T] {
 	}
 }
 
-func OneOrMore[IN, OUT any](mapper func([]IN) OUT, parser Parser[IN]) Parser[OUT] {
+func OneOrMore[IN, OUT any](mapper func([]IN) (OUT, error), parser Parser[IN]) Parser[OUT] {
 	return Parser[OUT]{
 		Name: "one or more",
 		f: func(s Scanner) (OUT, error) {
@@ -123,7 +123,7 @@ func OneOrMore[IN, OUT any](mapper func([]IN) OUT, parser Parser[IN]) Parser[OUT
 			if mapper == nil {
 				return *new(OUT), nil
 			}
-			return mapper(values), nil
+			return mapper(values)
 		},
 	}
 }
@@ -167,7 +167,21 @@ func ZeroOrOne[IN, OUT any](mapper func(*IN) OUT, parser Parser[IN]) Parser[OUT]
 	}
 }
 
-var DigitParser = OneOf(
+func Map[IN, OUT any](p Parser[IN], f func(i IN) (OUT, error)) Parser[OUT] {
+	return Parser[OUT]{
+		Name: "Map parser",
+		f: func(s Scanner) (OUT, error) {
+			res, err := p.Parse(s)
+			if err != nil {
+				return *new(OUT), err
+			}
+
+			return f(res)
+		},
+	}
+}
+
+var DigitParser = Map(OneOf(
 	Char('0'),
 	Char('1'),
 	Char('2'),
@@ -178,13 +192,14 @@ var DigitParser = OneOf(
 	Char('7'),
 	Char('8'),
 	Char('9'),
-)
+), func(c rune) (int, error) {
+	return strconv.Atoi(string(c))
+})
 
-var IntParser = OneOrMore(func(cs []rune) int64 {
+var IntParser = OneOrMore(func(cs []int) (int, error) {
 	var s string
 	for _, c := range cs {
-		s += string(c)
+		s += fmt.Sprint(c)
 	}
-	i, _ := strconv.Atoi(s)
-	return int64(i)
+	return strconv.Atoi(s)
 }, DigitParser)
