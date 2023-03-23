@@ -1,7 +1,6 @@
-# go-parsec
+# go-nom
 
-Parser combinator library for golang.
-
+[https://github.com/rust-bakery/nom](nom) like library for golang.
 
 ## Example
 

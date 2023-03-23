@@ -1,4 +1,4 @@
-module github.com/amirrezaask/go-parsec
+module github.com/amirrezaask/go-nom
 
 go 1.20
 

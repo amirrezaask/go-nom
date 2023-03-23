@@ -1,4 +1,4 @@
-package parsec
+package nom
 
 import (
 	"errors"
@@ -10,7 +10,7 @@ import (
 func TestChar(t *testing.T) {
 	s := NewStringScanner("c")
 	parser := Char('c')
-	c, err := parser.Parse(s)
+	c, err := parser(s)
 
 	assert.NoError(t, err)
 
@@ -35,7 +35,7 @@ func TestSeq(t *testing.T) {
 		return struct{}{}, nil
 	})
 
-	_, err := charKeywordParser.Parse(s)
+	_, err := charKeywordParser(s)
 	assert.NoError(t, err)
 }
 
@@ -45,7 +45,7 @@ func TestOneOf(t *testing.T) {
 	falseKeywordParser := Map(Sequence(Char('f'), Char('a'), Char('l'), Char('s'), Char('e')), func(_ []rune) (bool, error) { return false, nil })
 	booleanParser := OneOf(trueKeywordParser, falseKeywordParser)
 
-	b, err := booleanParser.Parse(s)
+	b, err := booleanParser(s)
 	assert.NoError(t, err)
 	assert.True(t, b)
 }
@@ -55,7 +55,7 @@ func TestOneOrMore(t *testing.T) {
 	bParser := Char('b')
 	bsParser := OneOrMore(bParser)
 
-	bs, err := bsParser.Parse(s)
+	bs, err := bsParser(s)
 	assert.NoError(t, err)
 	assert.Equal(t, 4, len(bs))
 }
@@ -65,7 +65,7 @@ func TestZeroOrMore(t *testing.T) {
 	bParser := Char('b')
 	bsParser := ZeroOrMore(bParser)
 
-	bs, err := bsParser.Parse(s)
+	bs, err := bsParser(s)
 	assert.NoError(t, err)
 	assert.Equal(t, 4, len(bs))
 }
@@ -75,14 +75,14 @@ func TestZeroOrOne(t *testing.T) {
 	bParser := Char('b')
 	bsParser := ZeroOrOne(bParser)
 
-	b, err := bsParser.Parse(s)
+	b, err := bsParser(s)
 	assert.NoError(t, err)
 	assert.Nil(t, b)
 }
 
 func TestDigit(t *testing.T) {
 	s := NewStringScanner("1")
-	c, err := DigitParser.Parse(s)
+	c, err := DigitParser(s)
 	assert.NoError(t, err)
 	assert.Equal(t, '1', c)
 
@@ -90,14 +90,14 @@ func TestDigit(t *testing.T) {
 
 func TestInt(t *testing.T) {
 	s := NewStringScanner("0123")
-	c, err := IntParser.Parse(s)
+	c, err := IntParser(s)
 	assert.NoError(t, err)
 	assert.Equal(t, 123, c)
 }
 
 func TestFloat(t *testing.T) {
 	s := NewStringScanner("0123.21")
-	c, err := FloatParser.Parse(s)
+	c, err := FloatParser(s)
 	assert.NoError(t, err)
 	assert.Equal(t, 123.21, c)
 }
