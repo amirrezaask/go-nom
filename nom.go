@@ -17,8 +17,6 @@ type Parser[OUT any] func(string) (string, OUT, error)
 
 func Char(c rune) Parser[rune] {
 	return func(s string) (string, rune, error) {
-		// fmt.Println(s)
-		// fmt.Println(c)
 		if s == "" {
 			return "", 0, ErrEOF
 		}
