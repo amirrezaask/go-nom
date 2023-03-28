@@ -13,6 +13,9 @@ func eof(s string) bool {
 	return s == ""
 }
 
+// Parser type is the main abstraction generic over output of the parser.
+// Each parser will consume the input and if succeed will return remaining string
+// and output of type OUT.
 type Parser[OUT any] func(string) (string, OUT, error)
 
 func Char(c rune) Parser[rune] {
@@ -125,6 +128,16 @@ func Map[IN, OUT any](p Parser[IN], f func(i IN) (OUT, error)) Parser[OUT] {
 	}
 }
 
+func Value[T any, OUT any](p Parser[OUT], value T) Parser[T] {
+	return func(s string) (string, T, error) {
+		tail, _, err := p(s)
+		if err != nil {
+			return s, *new(T), err
+		}
+		return tail, value, nil
+	}
+}
+
 func Tag(tag string) Parser[string] {
 	var chars []Parser[rune]
 	for _, c := range tag {
@@ -135,3 +148,4 @@ func Tag(tag string) Parser[string] {
 		return string(rs), nil
 	})
 }
+

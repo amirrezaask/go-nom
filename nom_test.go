@@ -115,3 +115,10 @@ func TestFloat(t *testing.T) {
 	assert.Equal(t, 123.21, c)
 	assert.Empty(t, tail)
 }
+
+func TestValue(t *testing.T) {
+	tail, c, err := Value(Char('a'), 1)("a")
+	assert.NoError(t, err)
+	assert.Equal(t, 1, c)
+	assert.Empty(t, tail)
+}
