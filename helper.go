@@ -15,7 +15,7 @@ var DigitParser = OneOf(
 	Char('9'),
 )
 
-var IntParser = Map(OneOrMore(DigitParser), func(cs []rune) (int, error) {
+var IntParser = Transform(OneOrMore(DigitParser), func(cs []rune) (int, error) {
 	i, err := strconv.Atoi(string(cs))
 	if err != nil {
 		return 0, err
@@ -23,9 +23,9 @@ var IntParser = Map(OneOrMore(DigitParser), func(cs []rune) (int, error) {
 	return i, nil
 })
 
-var FloatParser = Map(Map(Sequence(
+var FloatParser = Transform(Transform(Sequence(
 	OneOrMore(DigitParser),
-	Map(Sequence(Map(Char('.'), func(r rune) ([]rune, error) { return []rune{r}, nil }), OneOrMore(DigitParser)),
+	Transform(Sequence(Transform(Char('.'), func(r rune) ([]rune, error) { return []rune{r}, nil }), OneOrMore(DigitParser)),
 		func(rss [][]rune) ([]rune, error) {
 			var out []rune
 			for _, rs := range rss {

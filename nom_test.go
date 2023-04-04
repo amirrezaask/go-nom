@@ -19,12 +19,12 @@ func TestTag(t *testing.T) {
 	charParser := Tag("char")
 	tail, out, err := charParser("char")
 	assert.NoError(t, err)
-	assert.Equal(t, "char", out)
+	assert.Equal(t, Nothing, out)
 	assert.Empty(t, tail)
 }
 
 func TestSeq(t *testing.T) {
-	charKeywordParser := Map(Sequence(Char('c'), Char('h'), Char('a'), Char('r')), func(cs []rune) (struct{}, error) {
+	charKeywordParser := Transform(Sequence(Char('c'), Char('h'), Char('a'), Char('r')), func(cs []rune) (struct{}, error) {
 		var s string
 		for _, c := range cs {
 			s += string(c)
@@ -43,24 +43,13 @@ func TestSeq(t *testing.T) {
 }
 
 func TestOneOf(t *testing.T) {
-	trueKeywordParser := Map(Sequence(Char('t'), Char('r'), Char('u'), Char('e')), func(_ []rune) (bool, error) { return true, nil })
-	falseKeywordParser := Map(Sequence(Char('f'), Char('a'), Char('l'), Char('s'), Char('e')), func(_ []rune) (bool, error) { return false, nil })
-	booleanParser := OneOf(trueKeywordParser, falseKeywordParser)
-
-	tail, b, err := booleanParser("true")
-	assert.NoError(t, err)
-	assert.True(t, b)
-	assert.Empty(t, tail)
-}
-
-func TestOneOf2(t *testing.T) {
 	trueKeyword := Tag("true")
 	truerKeyword := Tag("truer")
 	booleanParser := OneOf(truerKeyword, trueKeyword)
 
 	tail, b, err := booleanParser("truer")
 	assert.NoError(t, err)
-	assert.Equal(t, "truer", b)
+	assert.Equal(t, Nothing, b)
 	assert.Empty(t, tail)
 }
 

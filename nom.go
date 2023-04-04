@@ -5,7 +5,9 @@ import (
 	"fmt"
 )
 
-type Empty struct{}
+type nothing struct{}
+
+var Nothing = nothing{}
 
 var ErrEOF = errors.New("reached eof")
 
@@ -113,7 +115,7 @@ func ZeroOrOne[T any](parser Parser[T]) Parser[*T] {
 	}
 }
 
-func Map[IN, OUT any](p Parser[IN], f func(i IN) (OUT, error)) Parser[OUT] {
+func Transform[IN, OUT any](p Parser[IN], f func(i IN) (OUT, error)) Parser[OUT] {
 	return func(s string) (string, OUT, error) {
 
 		tail, res, err := p(s)
@@ -138,14 +140,17 @@ func Value[T any, OUT any](p Parser[OUT], value T) Parser[T] {
 	}
 }
 
-func Tag(tag string) Parser[string] {
-	var chars []Parser[rune]
-	for _, c := range tag {
-		chars = append(chars, Char(c))
-	}
-	seq := Sequence(chars...)
-	return Map(seq, func(rs []rune) (string, error) {
-		return string(rs), nil
-	})
-}
+func Tag(tag string) Parser[nothing] {
+	return func(s string) (string, nothing, error) {
+		err := fmt.Errorf("expected '%s' got '%s'", tag, s[:len(tag)])
+		if len(s) < len(tag) { return s, Nothing, err}
+		if len(tag) <= len(s) && s[:len(tag)] == tag {
+			if len(s) == len(tag) {
+				return "", Nothing, nil
+			}
+			return s[len(tag)+1:], Nothing, nil
+		}
 
+		return s, Nothing, err
+	}
+}
