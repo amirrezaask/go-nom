@@ -143,7 +143,9 @@ func Value[T any, OUT any](p Parser[OUT], value T) Parser[T] {
 func Tag(tag string) Parser[nothing] {
 	return func(s string) (string, nothing, error) {
 		err := fmt.Errorf("expected '%s' got '%s'", tag, s[:len(tag)])
-		if len(s) < len(tag) { return s, Nothing, err}
+		if len(s) < len(tag) {
+			return s, Nothing, err
+		}
 		if len(tag) <= len(s) && s[:len(tag)] == tag {
 			if len(s) == len(tag) {
 				return "", Nothing, nil
